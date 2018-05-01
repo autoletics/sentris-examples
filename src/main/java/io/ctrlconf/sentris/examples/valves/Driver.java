@@ -64,7 +64,8 @@ public final class Driver implements DriverOps {
 
       // used for signaling the starting of a thread
       final CyclicBarrier started =
-          new CyclicBarrier(THREADS + 1);
+          new CyclicBarrier(
+              THREADS + 1);
 
       // used for signalling the finishing of a thread
       final CyclicBarrier finished =
@@ -83,9 +84,9 @@ public final class Driver implements DriverOps {
       // kick off threads at this point
       started.await();
 
-      // don't wait around for all to complete
+      // don't wait too long for all to complete
       finished.await(
-          DURATION,
+          DURATION << 1,
           NANOSECONDS);
 
     } finally {
