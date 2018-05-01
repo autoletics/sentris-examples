@@ -1,0 +1,234 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>io.ctrlconf</groupId>
+  <artifactId>sentris-examples</artifactId>
+  <version>0.2-SNAPSHOT</version>
+
+  <properties>
+
+    <version.java>1.8</version.java>
+    <version.exec.plugin>1.6.0</version.exec.plugin>
+    <version.compiler.plugin>3.3</version.compiler.plugin>
+    <version.dependency.plugin>2.10</version.dependency.plugin>
+
+    <!-- the root level configuration runs with
+         a visualization enabled but no control -->
+
+    <example.conf/>
+
+    <example.lib.dir>${basedir}/lib</example.lib.dir>
+    <example.lib.name>sentris-examples.jar</example.lib.name>
+    <example.conf.dir>${basedir}/conf</example.conf.dir>
+
+  </properties>
+
+
+  <build>
+
+    <plugins>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <configuration>
+          <source>${version.java}</source>
+          <target>${version.java}</target>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <executions>
+
+          <!-- runs the qos example -->
+          
+          <execution>
+            <id>qos</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>none</phase>
+            <configuration>
+              <arguments>
+                <argument>-Djxinsight.home=${example.conf.dir}/qos/${example.conf}</argument>
+                <argument>io.ctrlconf.sentris.examples.qos.Driver</argument>
+              </arguments>
+            </configuration>
+          </execution>
+
+          <!-- runs the adaptive control value example -->
+
+          <execution>
+            <id>valves</id>
+            <goals>
+              <goal>exec</goal>
+            </goals>
+            <phase>none</phase>
+            <configuration>
+              <arguments>
+                <argument>-Djxinsight.home=${example.conf.dir}/valves/${example.conf}</argument>
+                <!-- turns off the automatic filtering of recursive method calls -->
+                <argument>-Djxinsight.server.probes.ext.aspectj.probe.nonrecursive.enabled=false</argument>
+                <argument>io.ctrlconf.sentris.examples.valves.Driver</argument>
+              </arguments>
+            </configuration>
+          </execution>
+        
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-dependency-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>copy</id>
+            <phase>package</phase>
+            <goals>
+              <goal>copy</goal>
+            </goals>
+            <configuration>
+              <artifactItems>
+                <artifactItem>
+                  <groupId>${project.groupId}</groupId>
+                  <artifactId>${project.artifactId}</artifactId>
+                  <version>${project.version}</version>
+                  <type>jar</type>
+                  <overWrite>true</overWrite>
+                  <outputDirectory>${example.lib.dir}</outputDirectory>
+                  <destFileName>${example.lib.name}</destFileName>
+                </artifactItem>
+              </artifactItems>
+              <overWriteReleases>false</overWriteReleases>
+              <overWriteSnapshots>true</overWriteSnapshots>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+    </plugins>
+
+    <pluginManagement>
+
+      <plugins>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${version.exec.plugin}</version>
+          <configuration>
+            <executable>java</executable>
+            <arguments combine.children="append">
+              <argument>-server</argument>
+              <argument>-javaagent:${basedir}/lib/sentris-javaagent.jar</argument>
+              <argument>-noverify</argument>
+              <argument>-classpath</argument>
+              <classpath/>
+              <!-- the executions defined at the plugin level run -->
+            </arguments>
+            <asyncDestroyOnShutdown>true</asyncDestroyOnShutdown>
+          </configuration>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-compiler-plugin</artifactId>
+          <version>${version.compiler.plugin}</version>
+        </plugin>
+
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-dependency-plugin</artifactId>
+          <version>${version.dependency.plugin}</version>
+        </plugin>
+
+      </plugins>
+
+    </pluginManagement>
+
+  </build>
+
+  <profiles>
+
+    <profile>
+      <id>resource-capacity</id>
+      <properties>
+        <example.conf>resource-capacity</example.conf>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>service-capacity</id>
+      <properties>
+        <example.conf>service-capacity</example.conf>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>min-reserve</id>
+      <properties>
+        <example.conf>min-reserve</example.conf>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>priority-queue</id>
+      <properties>
+        <example.conf>priority-queue</example.conf>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>rate-limit</id>
+      <properties>
+        <example.conf>rate-limit</example.conf>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>reserve-pool</id>
+      <properties>
+        <example.conf>reserve-pool</example.conf>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>resource-barrier</id>
+      <properties>
+        <example.conf>resource-barrier</example.conf>
+      </properties>
+    </profile>
+
+    <profile>
+      <id>reserve-lanes</id>
+      <properties>
+        <example.conf>reserve-lanes</example.conf>
+      </properties>
+    </profile>
+
+    <!-- the throughput (count) optimizing valve -->
+
+    <profile>
+      <id>tvalve</id>
+      <properties>
+        <example.conf>tvalve</example.conf>
+      </properties>
+    </profile>
+
+    <!-- the response (clock.time) optimizing valve -->
+
+    <profile>
+      <id>rvalve</id>
+      <properties>
+        <example.conf>rvalve</example.conf>
+      </properties>
+    </profile>
+
+  </profiles>
+
+</project>
