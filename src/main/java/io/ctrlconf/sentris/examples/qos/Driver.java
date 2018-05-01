@@ -20,21 +20,19 @@ import io.ctrlconf.sentris.examples.DriverOps;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import static io.ctrlconf.sentris.examples.DriverOps.shutdown;
-import static io.ctrlconf.sentris.examples.DriverOps.waitOn;
+import static io.ctrlconf.sentris.examples.DriverOps.*;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
-import static java.lang.System.nanoTime;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 /**
  * A driver class used across the various QoS configuration examples.
  */
+@SuppressWarnings("Convert2MethodRef")
 public final class Driver implements DriverOps {
 
   private static final long DEFAULT_DELAY    = 10L;
@@ -49,7 +47,10 @@ public final class Driver implements DriverOps {
    * Simulates the execution of multiple competing service threads.
    */
   public static void main(
-      final String... args) throws InterruptedException, TimeoutException, BrokenBarrierException {
+      final String... args)
+  throws
+      InterruptedException,
+      BrokenBarrierException {
 
     try {
 
@@ -63,30 +64,44 @@ public final class Driver implements DriverOps {
           new CyclicBarrier(
               (THREADS << 1) + 1);
 
+      // used for controlling further processing by threads
+      final AtomicBoolean proceed =
+          new AtomicBoolean(true);
+
       // the creation of both service threads is intermingled for
       // those examples where we don't want a convoy of one type
 
       for(int i = THREADS; i > 0; i--) {
 
-        spawn(
-            started,
-            Driver::s1,
-            finished);
+        // start a "service 1" thread
 
         spawn(
-            started,
-            Driver::s2,
-            finished);
+            () -> waitOn(started),
+            () -> proceed.get(),
+            () -> s1(),
+            () -> waitOn(finished));
+
+        // start a "service 2" thread
+
+        spawn(
+            () -> waitOn(started),
+            () -> proceed.get(),
+            () -> s2(),
+            () -> waitOn(finished));
 
       }
 
-      // kick off threads at this point
+      // kick off processing in threads
       started.await();
 
+      // wait for the running time to elapse
+      parkNanos(DURATION);
+
+      // prevent further continuation of calls
+      proceed.set(true);
+
       // don't wait too long for all to complete
-      finished.await(
-          DURATION << 1,
-          NANOSECONDS);
+      finished.await();
 
     } finally {
 
@@ -95,60 +110,6 @@ public final class Driver implements DriverOps {
     }
 
   }
-
-
-  /**
-   * Creates and starts a service thread
-   */
-  private static void spawn(
-      final CyclicBarrier started,
-      final Runnable service,
-      final CyclicBarrier finished) {
-
-    new Thread(
-        () ->
-            run(
-                () -> waitOn(started),
-                service,
-                () -> waitOn(finished)))
-        .start();
-
-  }
-
-
-  /**
-   * Calls the provided {@link Runnable} infinitely
-   */
-  private static void run(
-      final Callback started,
-      final Runnable service,
-      final Callback finished) {
-
-    try {
-
-      started.signal();
-
-      // for visualization reasons the timed
-      // shutdown checks are performed within
-      // each thread and not the main thread
-
-      final long end = nanoTime() + DURATION;
-
-      //noinspection MethodCallInLoopCondition
-      do {
-
-        service.run();
-
-      } while(nanoTime() < end);
-
-    } finally {
-
-      finished.signal();
-
-    }
-
-  }
-
 
   /**
    * Simulate the execution of a s1 service flow

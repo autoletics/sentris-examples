@@ -53,6 +53,59 @@ public interface DriverOps {
   }
 
   /**
+   * An interface for controlling the continuation of processing
+   */
+  @FunctionalInterface
+  interface Control {
+
+    /**
+     * Indicates whether the worker should continue iterating over some operation
+     *
+     * @return <tt>true</tt> is processing should continue
+     */
+    boolean proceed();
+
+  }
+
+  /**
+   * An interface for demarcating an action to be performed during repetitive processing
+   */
+  @FunctionalInterface
+  interface Action {
+
+    /**
+     * Performs the action repeated during the processing
+     */
+    void perform();
+
+  }
+
+  /**
+   * Creates and starts a thread with the specified callbacks, control, and action
+   *
+   * @param started  the callback used for signalling the actual readiness of a thread
+   * @param control  the control interface used to terminate further processing
+   * @param action   the action that is repeated during each iteration
+   * @param finished the callback used for signalling the completion of processing by a thread
+   * @see #run(Callback, Control, Action, Callback)
+   */
+  static void spawn(
+      final Callback started,
+      final Control control,
+      final Action action,
+      final Callback finished) {
+
+    new Thread(
+        () -> run(
+            started,
+            control,
+            action,
+            finished))
+        .start();
+
+  }
+
+  /**
    * Waits on all parties to have arrived before returning
    *
    * @param barrier the barrier used for coordinate continuation
@@ -69,6 +122,31 @@ public interface DriverOps {
             | BrokenBarrierException e) {
 
       e.printStackTrace();
+
+    }
+
+  }
+
+  /**
+   * Calls the provided {@link Action} until indicated otherwise by the specified {@link Control}
+   */
+  static void run(
+      final Callback started,
+      final Control control,
+      final Action action,
+      final Callback finished) {
+
+    try {
+
+      started.signal();
+
+      //noinspection MethodCallInLoopCondition
+      while(control.proceed())
+        action.perform();
+
+    } finally {
+
+      finished.signal();
 
     }
 
