@@ -3,6 +3,7 @@
 .idea/dictionaries
 
 /target/
+/lib/*.jar
 
 *.aspectj.cache
 
