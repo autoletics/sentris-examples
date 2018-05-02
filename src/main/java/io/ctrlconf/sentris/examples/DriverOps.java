@@ -16,8 +16,13 @@
 
 package io.ctrlconf.sentris.examples;
 
+import io.ctrlconf.sentris.examples.DriverOps.Action.Factory;
+
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 /**
  * Common driver configuration options and routines.
@@ -78,6 +83,18 @@ public interface DriverOps {
      */
     void perform();
 
+    /**
+     * An interface for
+     */
+    @FunctionalInterface
+    interface Factory {
+
+      /**
+       */
+      Action create(int id);
+
+    }
+
   }
 
   /**
@@ -128,6 +145,72 @@ public interface DriverOps {
   }
 
   /**
+   * Creates a number of runners (threads) performing a series of controlled calls within the scope of a created action.
+   *
+   * @param runners  the number of action runners spawned
+   * @param duration the duration of the execution
+   * @param factory  the factory used to create actions
+   */
+  static void execute(
+      final int runners,
+      final long duration,
+      final Factory factory) {
+
+    try {
+
+      // used for signaling the starting of a thread
+      final CyclicBarrier started =
+          new CyclicBarrier(
+              runners + 1);
+
+      // used for signalling the finishing of a thread
+      final CyclicBarrier finished =
+          new CyclicBarrier(
+              runners + 1);
+
+      // used for controlling further processing by threads
+      final AtomicBoolean control =
+          new AtomicBoolean(true);
+
+      // the creation of both service threads is intermingled for
+      // those examples where we don't want a convoy of one type
+
+      for(int i = runners; i > 0; i--) {
+
+        //noinspection Convert2MethodRef
+        spawn(
+            () -> waitOn(started),
+            () -> control.get(),
+            factory.create(i),
+            () -> waitOn(finished));
+
+      }
+
+      // kick off processing in threads
+      started.await();
+
+      // wait for the running time to elapse
+      parkNanos(duration);
+
+      // prevent further continuation of calls
+      control.set(false);
+
+      // don't wait too long for all to complete
+      finished.await();
+
+    } catch(InterruptedException | BrokenBarrierException e) {
+
+      e.printStackTrace();
+
+    } finally {
+
+      shutdown();
+
+    }
+
+  }
+
+  /**
    * Calls the provided {@link Action} until indicated otherwise by the specified {@link Control}
    */
   static void run(
@@ -159,6 +242,7 @@ public interface DriverOps {
 
     // needed to force shutdown because
     // of possible active Swing/AWT threads
+    // created by the visualization extensions
 
     System.exit(0);
 

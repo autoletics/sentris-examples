@@ -18,11 +18,7 @@ package io.ctrlconf.sentris.examples.qos;
 
 import io.ctrlconf.sentris.examples.DriverOps;
 
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.ctrlconf.sentris.examples.DriverOps.*;
+import static io.ctrlconf.sentris.examples.DriverOps.execute;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -47,67 +43,18 @@ public final class Driver implements DriverOps {
    * Simulates the execution of multiple competing service threads.
    */
   public static void main(
-      final String... args)
-  throws
-      InterruptedException,
-      BrokenBarrierException {
+      final String... args) {
 
-    try {
+    // run simulation with double the threads
+    // because we have two services calling
 
-      // used for signaling the starting of a thread
-      final CyclicBarrier started =
-          new CyclicBarrier(
-              (THREADS << 1) + 1);
-
-      // used for signalling the finishing of a thread
-      final CyclicBarrier finished =
-          new CyclicBarrier(
-              (THREADS << 1) + 1);
-
-      // used for controlling further processing by threads
-      final AtomicBoolean proceed =
-          new AtomicBoolean(true);
-
-      // the creation of both service threads is intermingled for
-      // those examples where we don't want a convoy of one type
-
-      for(int i = THREADS; i > 0; i--) {
-
-        // start a "service 1" thread
-
-        spawn(
-            () -> waitOn(started),
-            () -> proceed.get(),
-            () -> s1(),
-            () -> waitOn(finished));
-
-        // start a "service 2" thread
-
-        spawn(
-            () -> waitOn(started),
-            () -> proceed.get(),
-            () -> s2(),
-            () -> waitOn(finished));
-
-      }
-
-      // kick off processing in threads
-      started.await();
-
-      // wait for the running time to elapse
-      parkNanos(DURATION);
-
-      // prevent further continuation of calls
-      proceed.set(true);
-
-      // don't wait too long for all to complete
-      finished.await();
-
-    } finally {
-
-      shutdown();
-
-    }
+    execute(
+        THREADS << 1,
+        DURATION,
+        id -> (id % 2) == 0
+              ? () -> s1()
+              : () -> s2()
+    );
 
   }
 

@@ -18,11 +18,7 @@ package io.ctrlconf.sentris.examples.valves;
 
 import io.ctrlconf.sentris.examples.DriverOps;
 
-import java.util.concurrent.BrokenBarrierException;
-import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static io.ctrlconf.sentris.examples.DriverOps.*;
+import static io.ctrlconf.sentris.examples.DriverOps.execute;
 import static java.lang.Integer.getInteger;
 import static java.lang.Long.getLong;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -52,59 +48,13 @@ public final class Driver implements DriverOps {
    * Simulates a number of threads calling downwards into a content resource
    */
   public static void main(
-      final String... args)
-  throws
-      BrokenBarrierException,
-      InterruptedException {
+      final String... args) {
 
-    try {
-
-      // used for signaling the starting of a thread
-      final CyclicBarrier started =
-          new CyclicBarrier(
-              THREADS + 1);
-
-      // used for signalling the finishing of a thread
-      final CyclicBarrier finished =
-          new CyclicBarrier(
-              THREADS + 1);
-
-      // used for controlling further processing by threads
-      final AtomicBoolean proceed =
-          new AtomicBoolean(true);
-
-      for(int i = THREADS; i > 0; i--) {
-
-        //noinspection Convert2MethodRef
-        spawn(
-            () -> waitOn(started),
-            () -> proceed.get(),
-            () -> call(DEPTH),
-            () -> waitOn(finished)
-        );
-
-      }
-
-      // kick off processing in threads
-      started.await();
-
-      // wait for the running time to elapse
-      parkNanos(DURATION);
-
-      // prevent further continuation of calls
-      proceed.set(true);
-
-      // don't wait too long for all to complete
-      finished.await();
-
-    } finally {
-
-      // this is done to shutdown
-      // the Swing/AWT threads
-
-      shutdown();
-
-    }
+    execute(
+        THREADS,
+        DURATION,
+        id -> () -> call(DEPTH)
+    );
 
   }
 
