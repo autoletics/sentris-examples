@@ -19,6 +19,7 @@ package io.ctrlconf.sentris.examples;
 import io.ctrlconf.sentris.examples.DriverOps.Action.Factory;
 
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -164,9 +165,9 @@ public interface DriverOps {
               runners + 1);
 
       // used for signalling the finishing of a thread
-      final CyclicBarrier finished =
-          new CyclicBarrier(
-              runners + 1);
+      final CountDownLatch finished =
+          new CountDownLatch(
+              runners);
 
       // used for controlling further processing by threads
       final AtomicBoolean control =
@@ -182,7 +183,7 @@ public interface DriverOps {
             () -> waitOn(started),
             () -> control.get(),
             factory.create(i),
-            () -> waitOn(finished));
+            () -> finished.countDown());
 
       }
 
