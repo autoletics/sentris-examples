@@ -28,7 +28,6 @@ import static java.util.concurrent.locks.LockSupport.parkNanos;
 /**
  * A driver class used across the various QoS configuration examples.
  */
-@SuppressWarnings("Convert2MethodRef")
 public final class Driver implements DriverOps {
 
   private static final long DEFAULT_DELAY    = 10L;
@@ -52,8 +51,8 @@ public final class Driver implements DriverOps {
         THREADS << 1,
         DURATION,
         id -> (id % 2) == 0
-              ? () -> s1()
-              : () -> s2()
+              ? Driver::s1
+              : Driver::s2
     );
 
   }
