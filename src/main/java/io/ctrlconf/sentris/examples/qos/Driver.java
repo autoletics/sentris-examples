@@ -50,7 +50,7 @@ public final class Driver implements DriverOps {
     execute(
         THREADS << 1,
         DURATION,
-        id -> (id % 2) == 0
+        id -> id % 2 == 0
               ? Driver::s1
               : Driver::s2
     );

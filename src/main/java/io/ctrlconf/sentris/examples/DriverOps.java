@@ -23,6 +23,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.lang.System.exit;
 import static java.util.concurrent.locks.LockSupport.parkNanos;
 
 /**
@@ -85,12 +86,13 @@ public interface DriverOps {
     void perform();
 
     /**
-     * An interface for
+     * An interface for constructing an action (consisting of multiple calls) performed by a thread runner.
      */
     @FunctionalInterface
     interface Factory {
 
       /**
+       * Creates an action for the specified runner id (sequence)
        */
       Action create(int id);
 
@@ -139,7 +141,7 @@ public interface DriverOps {
         final InterruptedException
             | BrokenBarrierException e) {
 
-      e.printStackTrace();
+      throw new RuntimeException(e);
 
     }
 
@@ -171,7 +173,7 @@ public interface DriverOps {
 
       // used for controlling further processing by threads
       final AtomicBoolean control =
-          new AtomicBoolean(true);
+          new AtomicBoolean(false);
 
       // the creation of both service threads is intermingled for
       // those examples where we don't want a convoy of one type
@@ -187,17 +189,24 @@ public interface DriverOps {
 
       }
 
+      // enable before opening barrier
+      control
+          .set(true);
+
       // kick off processing in threads
-      started.await();
+      started
+          .await();
 
       // wait for the running time to elapse
       parkNanos(duration);
 
       // prevent further continuation of calls
-      control.set(false);
+      control
+          .set(false);
 
       // don't wait too long for all to complete
-      finished.await();
+      finished
+          .await();
 
     } catch(InterruptedException | BrokenBarrierException e) {
 
@@ -222,7 +231,8 @@ public interface DriverOps {
 
     try {
 
-      started.signal();
+      started
+          .signal();
 
       //noinspection MethodCallInLoopCondition
       while(control.proceed())
@@ -230,7 +240,8 @@ public interface DriverOps {
 
     } finally {
 
-      finished.signal();
+      finished
+          .signal();
 
     }
 
@@ -245,7 +256,7 @@ public interface DriverOps {
     // of possible active Swing/AWT threads
     // created by the visualization extensions
 
-    System.exit(0);
+    exit(0);
 
   }
 
